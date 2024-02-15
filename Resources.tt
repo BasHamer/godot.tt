@@ -1,0 +1,62 @@
+<#@ template language="C#" hostSpecific="true" debug="True" #>
+<#@ output extension="cs" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="EnvDte" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Text.RegularExpressions" #>
+<#@ import namespace="System" #>
+<#
+  var visualStudio = (this.Host as IServiceProvider).GetService(typeof(EnvDTE.DTE)) as EnvDTE.DTE;
+  var project = visualStudio.Solution.FindProjectItem(this.Host.TemplateFile).ContainingProject as EnvDTE.Project;
+
+  string root = Host.ResolvePath("");
+  var projectItems = GetProjectItemsRecursively(project.ProjectItems);
+#>
+public static class Resources
+{
+<# ListFiles("", projectItems); #>
+	
+}
+
+<#+
+	public void ListFiles(string path, List<string> projectItems)
+	{
+		var root = Host.ResolvePath("");
+		
+		var files = Directory.EnumerateFiles(root + path, "*.tscn", SearchOption.AllDirectories)
+			.Select(f => f.Replace("\\", "/"))
+			.Where(f => projectItems.Any(p => p.Equals(f.Replace("tscn","cs"), StringComparison.OrdinalIgnoreCase)))
+			.Select(f => new { path= "res:/" + f.Substring(root.Length), file = new FileInfo(f)})
+			.OrderBy(f => f.path)
+			.ToList();
+
+		foreach(var file in files)
+		{
+			WriteLine($"\t\tpublic static string {file.file.Name.Replace(".tscn","")} => @\"{file.path}\";");
+		}
+	}
+
+	public List<string> GetProjectItemsRecursively(EnvDTE.ProjectItems items)
+	{
+		var ret = new List<string>();
+		if (items == null) return ret;
+
+		foreach(EnvDTE.ProjectItem item in items)
+		{
+			string result = item.FileNames[1].Replace("\\", "/");
+			
+			// If not folder.
+			if (result[result.Length - 1] != '\\')
+			{
+				ret.Add(result);
+			}
+						
+			ret.AddRange(GetProjectItemsRecursively(item.ProjectItems));
+		}
+
+		return ret;
+	}
+#>
+
