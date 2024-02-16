@@ -1,4 +1,4 @@
-﻿<#@ template language="C#" hostSpecific="true" debug="True" #>
+<#@ template language="C#" hostSpecific="true" debug="True" #>
 <#@ output extension="cs" #>
 <#@ assembly name="System.Core" #>
 <#@ assembly name="EnvDte" #>
@@ -37,6 +37,7 @@ using System.Diagnostics.CodeAnalysis;
 		foreach(var file in files)
 		{
 			WriteLine($"[assembly: SuppressMessage(\"Design\", \"CA1050:Declare types in namespaces\", Justification = \"Godot\", Scope = \"type\", Target = \"~T:{file.file.Name.Replace(".tscn","")}\")]");
+			WriteLine($"[assembly: SuppressMessage(\"Style\", \"IDE1006:Naming Styles\", Justification = \"Godot\", Scope = \"type\", Target = \"~T:{file.file.Name.Replace(".tscn","")}\")]");
 		}
 	}
 
